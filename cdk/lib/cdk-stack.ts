@@ -10,26 +10,48 @@ export class CdkStack extends cdk.Stack {
     constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
-        const dynamoTable = new dynamodb.Table(this, 'items', {
+
+        const dynamoItems = new dynamodb.Table(this, 'items', {
             partitionKey: {
                 name: 'itemId',
                 type: dynamodb.AttributeType.STRING
             },
-            tableName: 'items',
-            removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
+            sortKey: {
+                name: 'createTime',
+                type: dynamodb.AttributeType.NUMBER
+            },
+            tableName: 'gy-tst-items',
+            removalPolicy: cdk.RemovalPolicy.DESTROY
         });
 
+
+        const dynamoMuta = new dynamodb.Table(this, 'itemMuta', {
+            partitionKey: {
+                name: 'itemId',
+                type: dynamodb.AttributeType.STRING
+            },
+            sortKey: {
+                name: 'timestamp',
+                type: dynamodb.AttributeType.STRING
+            },
+            tableName: 'gy-tst-itemMuta',
+            removalPolicy: cdk.RemovalPolicy.DESTROY
+        });
+
+
         const getOneLambda = new lambda.Function(this, 'getOneItemFunction', {
-            code: new lambda.AssetCode('../sample-func/build/libs/sample-func-2.0.0.RELEASE-aws.jar'),
+            code: new lambda.AssetCode('../sample-func/build/libs/sample-all-ns.r100-deploy.jar'),
             handler: 'org.springframework.cloud.function.adapter.aws.FunctionInvoker::handleRequest',
             runtime: lambda.Runtime.JAVA_11,
             environment: {
-                TABLE_NAME: dynamoTable.tableName,
+                // TABLE_NAME: "tst-dynamo",
+                TABLE_NAME: dynamoItems.tableName,
                 PRIMARY_KEY: 'itemId'
-            }
+            },
+            memorySize: 1024
         });
 
-        dynamoTable.grantReadWriteData(getOneLambda);
+        dynamoItems.grantReadWriteData(getOneLambda);
 
         const httpApi = new apigatewayv2.HttpApi(this, 'itemsApi', {
             apiName: 'rest',
