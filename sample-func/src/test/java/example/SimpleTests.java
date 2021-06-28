@@ -25,7 +25,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
         "amazon.dynamodb.endpoint=http://localhost:8000/",
         "amazon.aws.accesskey=test1",
         "amazon.aws.secretkey=test231" } )
-public class MapTests{
+public class SimpleTests{
 
 
     @Autowired

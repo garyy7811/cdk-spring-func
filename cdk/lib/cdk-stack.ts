@@ -1,9 +1,8 @@
-import * as apigatewayv2 from '@aws-cdk/aws-apigatewayv2';
-import * as apigatewayv2int from '@aws-cdk/aws-apigatewayv2-integrations';
+import * as api from '@aws-cdk/aws-apigateway';
+import * as apiv2 from '@aws-cdk/aws-apigatewayv2';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as cdk from '@aws-cdk/core';
-import {HttpMethod} from "@aws-cdk/aws-apigatewayv2";
 import {LambdaProxyIntegration} from "@aws-cdk/aws-apigatewayv2-integrations";
 
 export class CdkStack extends cdk.Stack {
@@ -53,16 +52,27 @@ export class CdkStack extends cdk.Stack {
 
         dynamoItems.grantReadWriteData(getOneLambda);
 
-        const httpApi = new apigatewayv2.HttpApi(this, 'itemsApi', {
-            apiName: 'rest',
+        const httpApi = new apiv2.HttpApi(this, 'itemsApi', {
+            apiName: 'apiv2-http',
             createDefaultStage: true
         });
 
         httpApi.addRoutes({
             path: '/books/{proxy+}',
-            methods: [HttpMethod.ANY],
+            methods: [apiv2.HttpMethod.ANY],
             integration: new LambdaProxyIntegration({handler: getOneLambda}),
         });
+
+        const restApi = new api.RestApi( this, 'apiv1-rest' )
+
+        let theOneLamb = new api.LambdaIntegration( getOneLambda );
+
+        const items = restApi.root.addResource( 'items')
+        items.addResource( 'get' ).addResource( '{itemId}' ).addMethod( 'GET', theOneLamb)
+        items.addResource( 'save' ).addMethod( 'POST', theOneLamb)
+
+        const muta = restApi.root.addResource( 'muta' )
+        muta.addResource( 'add' ).addMethod( 'POST', theOneLamb )
 
     }
 }
